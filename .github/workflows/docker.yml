@@ -1,5 +1,5 @@
 ---
-name: CI to GHCR 
+name: CI to docker
 
 on:
   push:
