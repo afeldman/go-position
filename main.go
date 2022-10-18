@@ -16,13 +16,17 @@ import (
 
 var geocoder geo.Geocoder = position.Geocoder()
 
+const VERSION string = "v0.1.0"
+
 var (
 	release bool
 	port    int
+	version bool
 )
 
 func init() {
 	flag.BoolVar(&release, "release", false, "set to release mode")
+	flag.BoolVar(&version, "version", false, "version")
 	flag.IntVar(&port, "port", 8888, "server port")
 }
 
@@ -32,6 +36,11 @@ func main() {
 
 	router := gin.New()
 
+	if version {
+		fmt.Println("Version is: ", VERSION)
+		return
+	}
+
 	if release {
 		log.Println("start release mode")
 		gin.SetMode(gin.ReleaseMode)
@@ -40,10 +49,18 @@ func main() {
 		gin.SetMode(gin.DebugMode)
 	}
 
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(http.StatusNotFound, gin.H{"message": "404 page not found", "status": http.StatusNotFound})
+	})
+
+	router.NoMethod(func(c *gin.Context) {
+		c.JSON(http.StatusMethodNotAllowed, gin.H{"message": "405 method not allowed", "status": http.StatusMethodNotAllowed})
+	})
+
 	v1 := router.Group("/v1")
 	{
-		v1.GET("/adress/:adress", func(c *gin.Context) {
-			adress := c.Param("adress")
+		v1.GET("/address/:address", func(c *gin.Context) {
+			adress := c.Param("address")
 
 			location, err := geocoder.Geocode(adress)
 

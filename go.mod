@@ -1,4 +1,4 @@
-module position
+module github.com/afeldman/go-position
 
 go 1.18
 
