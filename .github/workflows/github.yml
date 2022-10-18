@@ -43,7 +43,7 @@ jobs:
           file: ./Dockerfile
           builder: ${{ steps.buildx.outputs.name }}
           push: true
-          tags: ghcr.io/usha-mandya/simplewhale:latest
+          tags: ghcr.io/usha-mandya/goposition:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache
       -
