@@ -16,7 +16,7 @@ import (
 
 var geocoder geo.Geocoder = position.Geocoder()
 
-const VERSION string = "v0.1.0"
+const VERSION string = "v0.1.4"
 
 var (
 	release bool
