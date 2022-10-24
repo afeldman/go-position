@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/codingsince1985/geo-golang"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -59,6 +60,7 @@ func FromGeo(c *gin.Context) {
 		c.JSON(http.StatusNotFound, resp)
 	} else {
 		resp.Message = *address
+		resp.Status = http.StatusOK
 		c.JSON(http.StatusOK, resp)
 	}
 

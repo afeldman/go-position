@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 
 	position "github.com/afeldman/go-position/position"
+	"github.com/sirupsen/logrus"
+	ginlogrus "github.com/toorop/gin-logrus"
 
 	"github.com/gin-gonic/gin"
 )
@@ -29,7 +30,10 @@ func main() {
 
 	flag.Parse()
 
+	log := logrus.New()
+
 	router := gin.New()
+	router.Use(ginlogrus.Logger(log), gin.Recovery())
 
 	if version {
 		fmt.Println("Version is: ", VERSION)
