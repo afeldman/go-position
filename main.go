@@ -8,13 +8,10 @@ import (
 
 	position "github.com/afeldman/go-position/position"
 
-	"github.com/codingsince1985/geo-golang"
 	"github.com/gin-gonic/gin"
 )
 
-var geocoder geo.Geocoder = position.Geocoder()
-
-const VERSION string = "v0.1.4"
+const VERSION string = "v0.2"
 
 var (
 	release bool
