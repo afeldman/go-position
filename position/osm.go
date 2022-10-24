@@ -15,18 +15,20 @@ const (
 type (
 	baseURL         string
 	geocodeResponse struct {
-		DisplayName string `json:"display_name"`
-		Lat         string
-		Lon         string
-		Error       string
+		DisplayName string      `json:"display_name"`
+		Lat         string      `json:"lat"`
+		Lon         string      `json:"lon"`
+		Error       string      `json:"err"`
 		Addr        osm.Address `json:"address"`
 	}
 )
 
 func Geocoder() geo.Geocoder {
 	return geo.HTTPGeocoder{
-		EndpointBuilder:       baseURL(osmurl),
-		ResponseParserFactory: func() geo.ResponseParser { return &geocodeResponse{} },
+		EndpointBuilder: baseURL(osmurl),
+		ResponseParserFactory: func() geo.ResponseParser {
+			return &geocodeResponse{}
+		},
 	}
 }
 

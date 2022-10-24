@@ -1,12 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	position "github.com/afeldman/go-position/position"
 
@@ -50,74 +48,24 @@ func main() {
 	}
 
 	router.NoRoute(func(c *gin.Context) {
-		c.JSON(http.StatusNotFound, gin.H{"message": "404 page not found", "status": http.StatusNotFound})
+		c.JSON(http.StatusNotFound, gin.H{
+			"message": "404 page not found",
+			"error":   "",
+			"status":  http.StatusNotFound})
 	})
 
 	router.NoMethod(func(c *gin.Context) {
-		c.JSON(http.StatusMethodNotAllowed, gin.H{"message": "405 method not allowed", "status": http.StatusMethodNotAllowed})
+		c.JSON(http.StatusMethodNotAllowed, gin.H{
+			"message": "405 method not allowed",
+			"error":   "",
+			"status":  http.StatusMethodNotAllowed})
 	})
 
 	v1 := router.Group("/v1")
 	{
-		v1.GET("/address/:address", func(c *gin.Context) {
-			adress := c.Param("address")
+		v1.GET("/address/:address", position.FromAddress)
 
-			location, err := geocoder.Geocode(adress)
-
-			if err != nil {
-				c.JSON(http.StatusNotFound, gin.H{
-					"status":  http.StatusNotFound,
-					"message": err.Error,
-				})
-			} else {
-				var b []byte
-				b, err = json.Marshal(location)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{
-						"status":  http.StatusBadRequest,
-						"message": err.Error(),
-					})
-				} else {
-					c.JSON(http.StatusOK, gin.H{
-						"status":  http.StatusOK,
-						"message": string(b),
-					})
-				}
-			}
-
-		})
-
-		v1.GET("/geo/:lat/:lon", func(c *gin.Context) {
-			lat := c.Param("lat")
-			lon := c.Param("lon")
-
-			slat, _ := strconv.ParseFloat(lat, 64)
-			slon, _ := strconv.ParseFloat(lon, 64)
-
-			adress, err := geocoder.ReverseGeocode(slat, slon)
-
-			if err != nil {
-				c.JSON(http.StatusNotFound, gin.H{
-					"status":  http.StatusNotFound,
-					"message": err.Error,
-				})
-			} else {
-				var b []byte
-				b, err = json.Marshal(adress)
-				if err != nil {
-					c.JSON(http.StatusBadRequest, gin.H{
-						"status":  http.StatusBadRequest,
-						"message": err.Error(),
-					})
-				} else {
-					c.JSON(http.StatusOK, gin.H{
-						"status":  http.StatusOK,
-						"message": string(b),
-					})
-				}
-			}
-
-		})
+		v1.GET("/geo/:lat/:lon", position.FromGeo)
 	}
 	router.Run(fmt.Sprintf("0.0.0.0:%d", port))
 }
