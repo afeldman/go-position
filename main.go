@@ -12,7 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const VERSION string = "v0.2"
+const VERSION string = "v0.2.1"
 
 var (
 	release bool
