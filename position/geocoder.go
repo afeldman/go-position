@@ -5,15 +5,11 @@ import (
 	"strings"
 
 	"github.com/codingsince1985/geo-golang"
+	"github.com/codingsince1985/geo-golang/openstreetmap"
 	"github.com/codingsince1985/geo-golang/osm"
 )
 
-const (
-	osmurl string = "https://nominatim.openstreetmap.org/"
-)
-
 type (
-	baseURL         string
 	geocodeResponse struct {
 		DisplayName string      `json:"display_name"`
 		Lat         string      `json:"lat"`
@@ -23,35 +19,15 @@ type (
 	}
 )
 
+// build geopoints for easy calculation
+// first longitude and second latetude
+type GeoJSONPoint struct {
+	Type        string     `json:"type"`
+	Coordinates [2]float64 `json:"coordinates"`
+}
+
 func Geocoder() geo.Geocoder {
-	return geo.HTTPGeocoder{
-		EndpointBuilder: baseURL(osmurl),
-		ResponseParserFactory: func() geo.ResponseParser {
-			return &geocodeResponse{}
-		},
-	}
-}
-
-func (b baseURL) GeocodeURL(address string) string {
-	return string(b) + "search?format=json&limit=1&q=" + address
-}
-
-func (b baseURL) ReverseGeocodeURL(location geo.Location) string {
-	return string(b) + "reverse?" + fmt.Sprintf("format=json&lat=%f&lon=%f", location.Lat, location.Lng)
-}
-
-func (r *geocodeResponse) Location() (*geo.Location, error) {
-	if r.Error != "" {
-		return nil, fmt.Errorf("geocoding error: %s", r.Error)
-	}
-	if r.Lat == "" && r.Lon == "" {
-		return nil, nil
-	}
-
-	return &geo.Location{
-		Lat: geo.ParseFloat(r.Lat),
-		Lng: geo.ParseFloat(r.Lon),
-	}, nil
+	return openstreetmap.Geocoder()
 }
 
 func (r *geocodeResponse) Address() (*geo.Address, error) {
