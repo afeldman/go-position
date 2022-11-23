@@ -1,8 +1,8 @@
 package position
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -36,6 +36,55 @@ func NewGeo() *geo_response {
 	}
 }
 
+func parseGeoArray(c *gin.Context, jsonData []byte) {
+	var request []geo_request
+
+	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
+		var errgeopoints = make([]geo_response, 1)
+		errgeopoints[0].Error = err.Error()
+		c.JSON(http.StatusNotFound, errgeopoints)
+	}
+
+	var geopoints = make([]geo_response, len(request))
+
+	//create the geolocation for all requests
+	for index, address := range request {
+		location, err := Geocoder().Geocode(address.Address)
+		if err != nil {
+			geopoints[index].Error = err.Error()
+		} else {
+			geopoints[index].Geo = NewGeoPoint(location.Lng, location.Lat)
+		}
+	}
+
+	c.JSON(http.StatusOK, geopoints)
+}
+
+func parseGeoObject(c *gin.Context, jsonData []byte) {
+	// build request type
+	request := geo_request{
+		Address: "",
+	}
+
+	// json string to request object
+	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
+		var errgeopoints = make([]geo_response, 1)
+		errgeopoints[0].Error = err.Error()
+		c.JSON(http.StatusNotFound, errgeopoints)
+	}
+
+	//create the geolocation
+	location, err := Geocoder().Geocode(request.Address)
+	var geopoints = make([]geo_response, 1)
+	if err != nil {
+		geopoints[0].Error = err.Error()
+		c.JSON(http.StatusNotFound, geopoints)
+	} else {
+		geopoints[0].Geo = NewGeoPoint(location.Lng, location.Lat)
+		c.JSON(http.StatusOK, geopoints)
+	}
+}
+
 func FromAddress(c *gin.Context) {
 
 	// build default responce
@@ -48,26 +97,20 @@ func FromAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, resp)
 	}
 
-	// build request type
-	request := geo_request{
-		Address: "",
-	}
-
-	// json string to request object
-	if err = json.Unmarshal([]byte(jsonData), &request); err != nil {
-		resp.Error = err.Error()
-		c.JSON(http.StatusNotFound, resp)
-	}
-
-	fmt.Println(request.Address)
-
-	//create the geolocation
-	location, err := Geocoder().Geocode(request.Address)
+	t, err := jsonType(bytes.NewReader(jsonData))
 	if err != nil {
 		resp.Error = err.Error()
-		c.JSON(http.StatusNotFound, resp)
-	} else {
-		resp.Geo = NewGeoPoint(location.Lng, location.Lat)
-		c.JSON(http.StatusOK, resp)
+		c.JSON(http.StatusInternalServerError, resp)
 	}
+
+	switch t {
+	case 0:
+		parseGeoArray(c, jsonData)
+	case 1:
+		parseGeoObject(c, jsonData)
+	default:
+		resp.Error = "must be object or array in the request"
+		c.JSON(http.StatusInternalServerError, resp)
+	}
+
 }
