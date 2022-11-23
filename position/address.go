@@ -4,36 +4,29 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/codingsince1985/geo-golang"
 	"github.com/gin-gonic/gin"
 )
 
-// address or error
-type address_response struct {
-	Error   string       `json:"error"`
-	Message *geo.Address `json:"message"`
-}
-
 func parseAddressArray(c *gin.Context, jsonData []byte) {
 	var request []GeoJSONPoint
 
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		var erraddr = make([]address_response, 1)
-		erraddr[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, erraddr)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var address_responce = make([]address_response, len(request))
+	var address_responce = make([]geo.Address, len(request))
 
 	//create the geolocation for all requests
 	for index, geos := range request {
 		address, err := Geocoder().ReverseGeocode(geos.Coordinates[1], geos.Coordinates[0])
 		if err != nil {
-			address_responce[index].Error = err.Error()
+			log.Println(err.Error())
 		} else {
-			address_responce[index].Message = address
+			address_responce[index] = *address
 		}
 	}
 	c.JSON(http.StatusOK, address_responce)
@@ -45,20 +38,17 @@ func parseAddressObject(c *gin.Context, jsonData []byte) {
 
 	// json string to request object
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		var erraddr = make([]address_response, 1)
-		erraddr[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, erraddr)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 	// make array responce
-	var addresses = make([]address_response, 1)
+	var addresses = make([]geo.Address, 1)
 
 	//create the geolocation
 	address, err := Geocoder().ReverseGeocode(request.Coordinates[1], request.Coordinates[0])
 	if err != nil {
-		addresses[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, addresses)
+		c.JSON(http.StatusNotFound, err.Error())
 	} else {
-		addresses[0].Message = address
+		addresses[0] = *address
 		c.JSON(http.StatusOK, addresses)
 	}
 }
@@ -66,22 +56,15 @@ func parseAddressObject(c *gin.Context, jsonData []byte) {
 // get geojson format for point
 func FromGeo(c *gin.Context) {
 
-	resp := address_response{
-		Error:   "",
-		Message: nil,
-	}
-
 	// read the body to json string
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		resp.Error = err.Error()
-		c.JSON(http.StatusNotFound, resp)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 
 	t, err := jsonType(bytes.NewReader(jsonData))
 	if err != nil {
-		resp.Error = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
+		c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	switch t {
@@ -90,7 +73,6 @@ func FromGeo(c *gin.Context) {
 	case 1:
 		parseAddressObject(c, jsonData)
 	default:
-		resp.Error = "must be object or array in the request"
-		c.JSON(http.StatusInternalServerError, resp)
+		c.JSON(http.StatusInternalServerError, "must be object or array in the request")
 	}
 }

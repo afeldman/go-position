@@ -4,16 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
-
-// error or data
-type geo_response struct {
-	Error string        `json:"error"`
-	Geo   *GeoJSONPoint `json:"geo"`
-}
 
 // geo request data is a address
 type geo_request struct {
@@ -28,32 +23,22 @@ func NewGeoPoint(lon, lat float64) *GeoJSONPoint {
 	}
 }
 
-// create a new geo object
-func NewGeo() *geo_response {
-	return &geo_response{
-		Error: "",
-		Geo:   nil,
-	}
-}
-
 func parseGeoArray(c *gin.Context, jsonData []byte) {
 	var request []geo_request
 
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		var errgeopoints = make([]geo_response, 1)
-		errgeopoints[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, errgeopoints)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var geopoints = make([]geo_response, len(request))
+	var geopoints = make([]GeoJSONPoint, len(request))
 
 	//create the geolocation for all requests
 	for index, address := range request {
 		location, err := Geocoder().Geocode(address.Address)
 		if err != nil {
-			geopoints[index].Error = err.Error()
+			log.Println(err.Error())
 		} else {
-			geopoints[index].Geo = NewGeoPoint(location.Lng, location.Lat)
+			geopoints[index] = *NewGeoPoint(location.Lng, location.Lat)
 		}
 	}
 
@@ -68,39 +53,31 @@ func parseGeoObject(c *gin.Context, jsonData []byte) {
 
 	// json string to request object
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
-		var errgeopoints = make([]geo_response, 1)
-		errgeopoints[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, errgeopoints)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 
 	//create the geolocation
 	location, err := Geocoder().Geocode(request.Address)
-	var geopoints = make([]geo_response, 1)
 	if err != nil {
-		geopoints[0].Error = err.Error()
-		c.JSON(http.StatusNotFound, geopoints)
+		c.JSON(http.StatusNotFound, err.Error())
 	} else {
-		geopoints[0].Geo = NewGeoPoint(location.Lng, location.Lat)
+		var geopoints = make([]GeoJSONPoint, 1)
+		geopoints[0] = *NewGeoPoint(location.Lng, location.Lat)
 		c.JSON(http.StatusOK, geopoints)
 	}
 }
 
 func FromAddress(c *gin.Context) {
 
-	// build default responce
-	resp := NewGeo()
-
 	// read the body to json string
 	jsonData, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		resp.Error = err.Error()
-		c.JSON(http.StatusNotFound, resp)
+		c.JSON(http.StatusNotFound, err.Error())
 	}
 
 	t, err := jsonType(bytes.NewReader(jsonData))
 	if err != nil {
-		resp.Error = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
+		c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
 	switch t {
@@ -109,8 +86,7 @@ func FromAddress(c *gin.Context) {
 	case 1:
 		parseGeoObject(c, jsonData)
 	default:
-		resp.Error = "must be object or array in the request"
-		c.JSON(http.StatusInternalServerError, resp)
+		c.JSON(http.StatusBadRequest, "must be object or array in the request")
 	}
 
 }
