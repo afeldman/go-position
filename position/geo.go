@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,19 +29,32 @@ func parseGeoArray(c *gin.Context, jsonData []byte) {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var geopoints = make([]GeoJSONPoint, len(request))
+	type c_return struct {
+		Index    int
+		Position *GeoJSONPoint
+	}
+	c_geopoints := make(chan c_return, len(request))
 
 	//create the geolocation for all requests
 	for index, address := range request {
-		location, err := Geocoder().Geocode(address.Address)
-		if err != nil {
-			log.Println(err.Error())
-		} else {
-			geopoints[index] = *NewGeoPoint(location.Lng, location.Lat)
-		}
+		go func(index int, raddress string) {
+			location, err := Geocoder().Geocode(raddress)
+			if err != nil || location == nil {
+				c_geopoints <- c_return{Index: index, Position: nil}
+			} else {
+				c_geopoints <- c_return{Index: index, Position: NewGeoPoint(location.Lng, location.Lat)}
+			}
+		}(index, address.Address)
 	}
 
-	c.JSON(http.StatusOK, geopoints)
+	geoposition := make([]*GeoJSONPoint, len(request))
+
+	for range geoposition {
+		pos := <-c_geopoints
+		geoposition[pos.Index] = pos.Position
+	}
+
+	c.JSON(http.StatusOK, geoposition)
 }
 
 func parseGeoObject(c *gin.Context, jsonData []byte) {

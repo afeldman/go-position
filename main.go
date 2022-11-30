@@ -12,8 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const VERSION string = "v0.3.1"
-
 var (
 	release bool
 	port    int
@@ -42,7 +40,7 @@ func main() {
 
 	// version informaiton
 	if version {
-		fmt.Println("Version is: ", VERSION)
+		fmt.Println("Version is: ", position.VERSION)
 		return
 	}
 
@@ -67,6 +65,12 @@ func main() {
 		c.JSON(http.StatusMethodNotAllowed, gin.H{
 			"message": "405 method not allowed",
 			"error":   ""})
+	})
+
+	router.GET("/", func(c *gin.Context) {
+
+		c.Header("Content-Type", "application/json; charset=utf-8")
+		c.String(http.StatusOK, "{\"version\":\"%s\"}", position.VERSION)
 	})
 
 	//set the entry group for the api

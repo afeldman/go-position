@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/codingsince1985/geo-golang"
@@ -18,17 +17,31 @@ func parseAddressArray(c *gin.Context, jsonData []byte) {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var address_responce = make([]geo.Address, len(request))
+	type c_return struct {
+		Index    int
+		Position *geo.Address
+	}
+	c_address := make(chan c_return, len(request))
 
 	//create the geolocation for all requests
 	for index, geos := range request {
-		address, err := Geocoder().ReverseGeocode(geos.Coordinates[1], geos.Coordinates[0])
-		if err != nil {
-			log.Println(err.Error())
-		} else {
-			address_responce[index] = *address
-		}
+		go func(index int, lng, lat float64) {
+			address, err := Geocoder().ReverseGeocode(lng, lat)
+			if err != nil || address == nil {
+				c_address <- c_return{Index: index, Position: nil}
+			} else {
+				c_address <- c_return{Index: index, Position: address}
+			}
+		}(index, geos.Coordinates[1], geos.Coordinates[0])
 	}
+
+	address_responce := make([]*geo.Address, len(request))
+
+	for range address_responce {
+		pos := <-c_address
+		address_responce[pos.Index] = pos.Position
+	}
+
 	c.JSON(http.StatusOK, address_responce)
 }
 
