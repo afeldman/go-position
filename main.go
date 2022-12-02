@@ -77,10 +77,10 @@ func main() {
 	v1 := router.Group("/v1")
 	{
 		// get the geocodes of an address
-		v1.POST("/address", position.FromAddress)
+		v1.POST("/address2geo", position.FromAddress)
 
 		// get the addres of the geo positon
-		v1.POST("/geo", position.FromGeo)
+		v1.POST("/geo2address", position.FromGeo)
 	}
 
 	// start server
