@@ -68,7 +68,6 @@ func main() {
 	})
 
 	router.GET("/", func(c *gin.Context) {
-
 		c.Header("Content-Type", "application/json; charset=utf-8")
 		c.String(http.StatusOK, "{\"version\":\"%s\"}", position.VERSION)
 	})
