@@ -28,35 +28,18 @@ func FromAddress(c *gin.Context) {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var request []geo_request
+	var request geo_request
+	var geoposition *GeoJSONPoint
 
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	type c_return struct {
-		Index    int
-		Position *GeoJSONPoint
-	}
-	c_geopoints := make(chan c_return, len(request))
-
-	//create the geolocation for all requests
-	for index, address := range request {
-		go func(index int, raddress string) {
-			location, err := Geocoder().Geocode(raddress)
-			if err != nil || location == nil {
-				c_geopoints <- c_return{Index: index, Position: nil}
-			} else {
-				c_geopoints <- c_return{Index: index, Position: NewGeoPoint(location.Lng, location.Lat)}
-			}
-		}(index, address.Address)
-	}
-
-	geoposition := make([]*GeoJSONPoint, len(request))
-
-	for range geoposition {
-		pos := <-c_geopoints
-		geoposition[pos.Index] = pos.Position
+	location, err := Geocoder().Geocode(request.Address)
+	if err != nil || location == nil {
+		geoposition = nil
+	} else {
+		geoposition = NewGeoPoint(location.Lng, location.Lat)
 	}
 
 	c.JSON(http.StatusOK, geoposition)

@@ -18,40 +18,19 @@ func FromGeo(c *gin.Context) {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	var request []GeoJSONPoint
+	var request GeoJSONPoint
+	var geo_pos *geo.Address
 
 	if err := json.Unmarshal([]byte(jsonData), &request); err != nil {
 		c.JSON(http.StatusNotFound, err.Error())
 	}
 
-	type c_return struct {
-		Index    int
-		Position *geo.Address
-	}
-	c_address := make(chan c_return, len(request))
-
-	//create the geolocation for all requests
-	for index, geos := range request {
-		go func(index int, lng, lat float64) {
-			if lng == 0 && lat == 0 {
-				c_address <- c_return{Index: index, Position: nil}
-			} else {
-				address, err := Geocoder().ReverseGeocode(lng, lat)
-				if err != nil || address == nil {
-					c_address <- c_return{Index: index, Position: nil}
-				} else {
-					c_address <- c_return{Index: index, Position: address}
-				}
-			}
-		}(index, geos.Coordinates[1], geos.Coordinates[0])
+	address, err := Geocoder().ReverseGeocode(request.Coordinates[1], request.Coordinates[0])
+	if err != nil || address == nil {
+		geo_pos = nil
+	} else {
+		geo_pos = address
 	}
 
-	address_responce := make([]*geo.Address, len(request))
-
-	for range address_responce {
-		pos := <-c_address
-		address_responce[pos.Index] = pos.Position
-	}
-
-	c.JSON(http.StatusOK, address_responce)
+	c.JSON(http.StatusOK, geo_pos)
 }
