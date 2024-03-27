@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: geo-position
+  labels:
+    name: geo-position
+    app: geo
+    
+spec:
+  containers:
+  - name: geo-position
+    image: goposition:latest
+    resources:
+      limits:
+        memory: "500Mi"
+        cpu: "500m"
+    ports:
+      - containerPort: 8888
+

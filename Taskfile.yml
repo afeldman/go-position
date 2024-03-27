@@ -1,0 +1,18 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  docker_build:
+    cmds:
+      - docker build -t goposition:latest .
+    silent: true
+  k8s:
+    cmds:
+      - kubectl apply -f k8s/position.yaml
+    silent: true
+  go_build:
+    cmds:
+      - goreleaser --clean --snapshot --skip-publish
+    silent: true
+
